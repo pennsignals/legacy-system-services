@@ -1,0 +1,1 @@
+This is a collection of nomad jobs that run various applications require to capture logs and metrics using various solutions.
