@@ -7,17 +7,79 @@ job "prometheus" {
       mode = "delay"
     }
 
+
+        task "grafana" {
+      driver = "docker"
+      config {
+        image = "grafana/grafana"
+        port_map {
+          http = 3000
+        }
+      }
+
+      resources {
+        network {
+            port "http" { static = "3000" }
+          }
+      }
+
+      service {
+        name = "grafana"
+        port = "http"
+        tags = ["ui"]
+        check {
+          name = "grafana UI TCP Check"
+          type = "tcp"
+          interval = "10s"
+          timeout = "2s"
+        }
+      }
+    }
+
+    task "pushgateway" {
+      driver = "docker"
+      config {
+        image = "prom/pushgateway"
+        port_map {
+          http = 9091
+        }
+      }
+
+      resources {
+        network {
+            port "http" { static = "9091" }
+          }
+      }
+
+      service {
+        name = "pushgateway"
+        port = "http"
+        tags = ["prometheus", "metrics", "ui"]
+        check {
+          type     = "tcp"
+          port     = "http"
+          interval = "10s"
+          timeout  = "2s"
+        }
+      }
+    }
+    
     task "prometheus" {
       driver = "docker"
       config {
         image = "prom/prometheus"
-        volumes = ["local/:/etc/prometheus/" ]
+        volumes = [
+          "local/:/etc/prometheus/",
+          "/deploy/prometheus-data:/prometheus"
+        ]
         port_map {
           http = 9090
         }
       }
 
       resources {
+        cpu    = 200
+        memory = 2048
         network {
             port "http" { static = "9090" }
           }
@@ -79,61 +141,6 @@ EOH
 
     }
 
-    task "grafana" {
-      driver = "docker"
-      config {
-        image = "grafana/grafana"
-        port_map {
-          http = 3000
-        }
-      }
-
-      resources {
-        network {
-            port "http" { static = "3000" }
-          }
-      }
-
-      service {
-        name = "grafana"
-        port = "http"
-        tags = ["ui"]
-        check {
-          name = "grafana UI TCP Check"
-          type = "tcp"
-          interval = "10s"
-          timeout = "2s"
-        }
-      }
-    }
-
-    task "pushgateway" {
-      driver = "docker"
-      config {
-        image = "prom/pushgateway"
-        port_map {
-          http = 9091
-        }
-      }
-
-      resources {
-        network {
-            port "http" { static = "9091" }
-          }
-      }
-
-      service {
-        name = "pushgateway"
-        port = "http"
-        tags = ["prometheus", "metrics", "ui"]
-        check {
-          type     = "tcp"
-          port     = "http"
-          interval = "10s"
-          timeout  = "2s"
-        }
-      }
-    }
 
   }
 }
