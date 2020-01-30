@@ -1,7 +1,7 @@
-job "prometheus" {
+job "grafana" {
   datacenters = ["dc1"]
 
-  group "prometheus" {
+  group "grafana" {
 
     restart {
       mode = "delay"
