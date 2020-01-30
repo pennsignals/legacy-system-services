@@ -17,7 +17,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": 2,
-  "iteration": 1580331388370,
+  "iteration": 1580396904519,
   "links": [],
   "panels": [
     {
@@ -79,6 +79,101 @@
       "timeRegions": [],
       "timeShift": null,
       "title": "Network Traffic",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {
+        "Memory Available": "dark-blue",
+        "Memory Used": "dark-red"
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": null,
+      "fill": 5,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "hiddenSeries": false,
+      "id": 6,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "dataLinks": []
+      },
+      "percentage": false,
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "container_spec_memory_limit_bytes{image=\"$image\"} / 1e9",
+          "legendFormat": "Memory Available",
+          "refId": "A"
+        },
+        {
+          "expr": "container_memory_usage_bytes{image=\"$image\"} / 1e9",
+          "legendFormat": "Memory Used",
+          "refId": "B"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Memory Usage",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -213,9 +308,10 @@
       {
         "allValue": "",
         "current": {
+          "selected": false,
           "tags": [],
-          "text": "quay.io/pennsignals/cdi-ui:v0.4.1",
-          "value": "quay.io/pennsignals/cdi-ui:v0.4.1"
+          "text": "quay.io/pennsignals/vent-cue:0.1.10",
+          "value": "quay.io/pennsignals/vent-cue:0.1.10"
         },
         "datasource": "Prometheus",
         "definition": "container_last_seen",
@@ -239,7 +335,7 @@
     ]
   },
   "time": {
-    "from": "now-6h",
+    "from": "now-30m",
     "to": "now"
   },
   "timepicker": {
@@ -259,5 +355,5 @@
   "timezone": "",
   "title": "Container Performance",
   "uid": "zjVK_wyZz",
-  "version": 18
+  "version": 19
 }
