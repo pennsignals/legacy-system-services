@@ -4,7 +4,10 @@ job "loki" {
 
   group "loki" {
     count = 1
-
+  constraint {
+    attribute = "${attr.unique.network.ip-address}"
+    value = "170.166.23.4"
+  }
     restart {
       attempts = 10
       interval = "5m"
@@ -29,8 +32,8 @@ job "loki" {
       }
 
       resources {
-        cpu    = 50
-        memory = 32
+        cpu    = 300
+        memory = 512
 
         network {
           mbits = 1
@@ -41,7 +44,7 @@ job "loki" {
       service {
         name = "loki"
         port = "http"
-        tags = ["loki", "ui"]
+        tags = ["monitoring"]
         check {
           type     = "http"
           path     = "/health"

@@ -1,0 +1,82 @@
+server:
+    http_listen_port: 9080
+    grpc_listen_port: 0 
+  
+positions:
+    filename: /tmp/positions.yaml
+
+client:
+  url: '{{ env "LOKI_ADDR" }}/loki/api/v1/push'
+
+scrape_configs:
+- job_name: system
+  static_configs:
+  - targets:
+      - "localhost"
+    labels:
+      job: varlogs
+      app: testapp
+      __path__: /alloc/logs/*
+
+- job_name: journal
+  journal:
+    json: false
+    max_age: 12h
+    path: /var/log/journal
+    labels:
+      job: systemd-journal
+  relabel_configs:
+    - source_labels: ['__journal__systemd_unit']
+      target_label: 'unit'
+
+- job_name: docker
+  entry_parser: raw
+  static_configs:
+  - targets:
+      - localhost
+    labels:
+      job: dockerlogs
+      __path__: /var/lib/docker/containers/*/*log
+
+- job_name:  parse
+  static_configs:
+  - targets:
+      - localhost
+    labels:
+      job: parse
+      app: web_app
+      __path__: /var/lib/docker/containers/*/*log
+
+  pipeline_stages:
+  - match:
+      selector: '{app="web_app"}'
+      stages:
+      - regex:
+          expression: '^(?s)[^0-9]+(?P<time>[^ ]+ [^ ]+)[^a-z]+(?P<service>\S+)[ |-]+(?P<level>\S+)[ |-]+(?P<payload>.*)$'
+      - labels:
+          service:
+          level:
+      - output:
+          source: payload
+
+- job_name: syslog
+  syslog:
+    listen_address: 0.0.0.0:1514
+    idle_timeout: 60s
+    label_structured_data: yes
+    labels:
+      job: "syslog"
+  relabel_configs:
+    - source_labels: ['__syslog_message_hostname']
+      target_label: 'host'
+
+- job_name: 'nomad_metrics'
+
+  consul_sd_configs:
+  - server: '{{ env "CONSUL_ADDR" }}'
+    services: ['nomad-client', 'nomad']
+
+  relabel_configs:
+  - source_labels: ['__meta_consul_tags']
+    regex: '(.*)http(.*)'
+    action: keep

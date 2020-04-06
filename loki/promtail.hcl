@@ -5,7 +5,7 @@ job "promtail" {
   group "promtail" {
     count = 1
 
-    restart {
+   restart {
       attempts = 10
       interval = "5m"
       delay    = "25s"
@@ -18,10 +18,10 @@ job "promtail" {
       env {
         CONSUL_IP = "https://uphsvlndc155.uphs.upenn.edu",
         CONSUL_PORT = "8500",
-        CONSUL_ADDR = "${CONSUL_IP}:${CONSUL_PORT}"
+        CONSUL_ADDR = "https://uphsvlndc155.uphs.upenn.edu:8500",
         LOKI_IP = "http://loki.pennsignals.uphs.upenn.edu",
-        LOKI_PORT = "3100"
-        LOKI_ADDR = "${CONSUL_IP}:${CONSUL_PORT}"
+        LOKI_PORT = "3100",
+        LOKI_ADDR = "http://170.166.23.4:3100"
       }
 
       config {
@@ -30,7 +30,7 @@ job "promtail" {
         logging {
           type = "loki"
           config {
-            loki-url="${LOKI_ADDR}/loki/api/v1/push"
+            loki-url="${LOKI_ADDR}/loki/api/v1/push",
             loki-retries=5,
             loki-batch-size=400
           }
@@ -60,24 +60,25 @@ job "promtail" {
 
       template {
         data = <<EOH
-server:
-  http_listen_port: 9080
-  grpc_listen_port: 0
 
+server:
+    http_listen_port: 9080
+    grpc_listen_port: 0 
+  
 positions:
-  filename: /tmp/positions.yaml
+    filename: /tmp/positions.yaml
 
 client:
-  url: {{ env "LOKI_ADDR" }}/loki/api/v1/push
+  url: '{{ env "LOKI_ADDR" }}/loki/api/v1/push'
 
 scrape_configs:
 - job_name: system
-  entry_parser: raw
   static_configs:
   - targets:
       - "localhost"
     labels:
       job: varlogs
+      app: testapp
       __path__: /alloc/logs/*
 
 - job_name: journal
@@ -91,14 +92,26 @@ scrape_configs:
     - source_labels: ['__journal__systemd_unit']
       target_label: 'unit'
 
-- job_name: docker
-  entry_parser: raw
+- job_name:  docker
   static_configs:
   - targets:
       - localhost
     labels:
       job: dockerlogs
+      app: web_app
       __path__: /var/lib/docker/containers/*/*log
+
+  pipeline_stages:
+  - match:
+      selector: '{app="web_app"} |~ "- [A-Z]+ -"'
+      stages:
+      - regex:
+          expression: '^(?s)[^0-9]+(?P<time>[^ ]+ [^ ]+)[^a-z]+(?P<service>\S+)[ |-]+(?P<level>\S+)[ |-]+(?P<payload>.*)$'
+      - labels:
+          service:
+          level:
+      - output:
+          source: payload
 
 - job_name: syslog
   syslog:
@@ -128,8 +141,8 @@ EOH
       }
 
       resources {
-        cpu    = 50
-        memory = 32
+        cpu    = 100
+        memory = 256
 
         network {
           mbits = 1

@@ -1,0 +1,1 @@
+^(?s)(?P<time>[^ ]+ [^ ]+)[^a-z]+(?P<service>\S+)[^a-z]+INFO[ |-]+(?P<info>.*)$
