@@ -1,0 +1,54 @@
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+
+ingester:
+  lifecycler:
+    address: 127.0.0.1
+    ring:
+      kvstore:
+        store: inmemory
+      replication_factor: 1
+    final_sleep: 0s
+  chunk_idle_period: 5m
+  chunk_retain_period: 30s
+
+
+schema_config:
+  configs:
+  - from: 2020-04-08
+    store: cassandra
+    object_store: filesystem
+    schema: v11
+    index:
+      prefix: loki_index
+      period: 360h
+    chunks:
+      prefix: chunk
+      period: 360h
+
+storage_config:
+  cassandra:
+    username: pennsignals-ds-logdb
+    password: v91i3RcUfuzBYOMxjuNFOOubQCKVbK15KCUu8n1CFXZkEhPv5UIsssDMWp86OQkrLPtaLSkbufnNpHVyBCEs1g==
+    addresses: pennsignals-ds-logdb.cassandra.cosmos.azure.com
+    port: 10350
+    auth: true
+    keyspace: loki
+  filesystem:
+    directory: /data/loki/chunks
+
+
+# table_manager:
+#   retention_deletes_enabled: true
+#   retention_period: "48h"
+
+
+# limits_config:
+#   enforce_metric_name: false
+#   reject_old_samples: true
+#   reject_old_samples_max_age: 168h
+
+# chunk_store_config:
+#   max_look_back_period: 30s

@@ -16,6 +16,18 @@ job "loki" {
     }
 
     task "loki" {
+
+      template {
+        destination   = "/etc/loki/loki.yml"
+        change_mode = "signal"
+        change_signal = "SIGHUP"
+        data = <<EOH
+
+{{key "monitoring/loki.yml"}}
+
+EOH
+
+      }
       driver = "docker"
 
       config {
@@ -23,7 +35,11 @@ job "loki" {
 
         args = [
           "-config.file",
-          "/etc/loki/local-config.yaml",
+          "/etc/loki/loki.yml",
+        ]
+
+        volumes = [
+          "etc/loki/loki.yml:/etc/loki/loki.yml",
         ]
 
         port_map {
@@ -46,10 +62,10 @@ job "loki" {
         port = "http"
         tags = ["monitoring"]
         check {
-          type     = "http"
-          path     = "/health"
+          name = "Loki TCP Check"
+          type = "tcp"
           interval = "10s"
-          timeout  = "2s"
+          timeout = "2s"
         }
       }
     }

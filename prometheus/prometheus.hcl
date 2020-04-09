@@ -36,49 +36,70 @@ job "prometheus" {
     }
     
     task "prometheus" {
-      driver = "docker"
-      config {
-        image = "prom/prometheus"
-        volumes = [
-          "local/:/etc/prometheus/",
-          "/deploy/prometheus-data:/prometheus"
-        ]
-        port_map {
-          http = 9090
-        }
-      }
 
-      resources {
-        cpu    = 200
-        memory = 2048
-        network {
-            port "http" { static = "9090" }
-          }
-      }
+      template {
+        change_mode = "noop"
+        destination = "local/docker_alert.yml"
+        data = <<EOH
 
-      service {
-        name = "prometheus"
-        port = "http"
-        tags = ["prometheus","ui"]
-        check {
-          name = "prometheus UI TCP Check"
-          type = "tcp"
-          interval = "10s"
-          timeout = "2s"
-        }
-      }
+{{key "monitoring/alert_rules/docker_alert.yml"}}
 
-      env {
-        GRAFANA_IP = "${NOMAD_ADDR_grafana_http}"
-        PUSHGATEWAY_IP = "${NOMAD_ADDR_pushgateway_http}"
+EOH
+      }
+      template {
+        change_mode = "noop"
+        destination = "local/node_alert.yml"
+        data = <<EOH
+
+{{key "monitoring/alert_rules/node_alert.yml"}}
+
+EOH
+      }
+      template {
+        change_mode = "noop"
+        destination = "local/prometheus_alert.yml"
+        data = <<EOH
+
+{{key "monitoring/alert_rules/prometheus_alert.yml"}}
+
+EOH
+      }
+      template {
+        change_mode = "noop"
+        destination = "local/promtail_alert.yml"
+        data = <<EOH
+
+{{key "monitoring/alert_rules/promtail_alert.yml"}}
+
+EOH
+      }
+      template {
+        change_mode = "noop"
+        destination = "local/service_alert.yml"
+        data = <<EOH
+
+{{key "monitoring/alert_rules/service_alert.yml"}}
+
+EOH
       }
 
       template {
-  data = <<EOH
+        destination   = "local/prometheus.yml"
+        change_mode   = "signal"
+        change_signal = "SIGHUP"
+        data = <<EOH
 global:
   scrape_interval:     15s 
   external_labels:
     monitor: 'codelab-monitor'
+
+# Rules and alerts are read from the specified file(s)
+rule_files:
+ - docker_alert.yml
+ - node_alert.yml
+ - prometheus_alert.yml
+ - promtail_alert.yml
+ - service_alert.yml
 
 scrape_configs:
   - job_name:       'prometheus'
@@ -105,9 +126,38 @@ scrape_configs:
         app: '{{ .Name}}'{{end}}
 {{end}}{{ end }}
 EOH
-        destination   = "local/prometheus.yml"
-        change_mode   = "signal"
-        change_signal = "SIGHUP"
+
+      }
+      driver = "docker"
+      config {
+        image = "prom/prometheus"
+        volumes = [
+          "local/:/etc/prometheus/"
+        ]
+        port_map {
+          http = 9090
+        }
+      }
+
+      resources {
+        cpu    = 200
+        memory = 2048
+        network {
+            port "http" { static = "9090" }
+          }
+      }
+
+      service {
+        name = "prometheus"
+        port = "http"
+        tags = ["prometheus","ui"]
+        check {
+          name     = "prometheus_ui port alive"
+          type     = "http"
+          path     = "/-/healthy"
+          interval = "10s"
+          timeout  = "2s"
+        }
       }
 
     }

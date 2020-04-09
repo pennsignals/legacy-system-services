@@ -6,7 +6,7 @@ positions:
     filename: /tmp/positions.yaml
 
 client:
-  url: '{{ env "LOKI_ADDR" }}/loki/api/v1/push'
+  url: 'http://170.166.23.4:3100/loki/api/v1/push'
 
 scrape_configs:
 - job_name: system
@@ -29,27 +29,18 @@ scrape_configs:
     - source_labels: ['__journal__systemd_unit']
       target_label: 'unit'
 
-- job_name: docker
-  entry_parser: raw
+- job_name:  docker
   static_configs:
   - targets:
       - localhost
     labels:
       job: dockerlogs
-      __path__: /var/lib/docker/containers/*/*log
-
-- job_name:  parse
-  static_configs:
-  - targets:
-      - localhost
-    labels:
-      job: parse
       app: web_app
       __path__: /var/lib/docker/containers/*/*log
 
   pipeline_stages:
   - match:
-      selector: '{app="web_app"}'
+      selector: '{app="web_app"} |~ "- [A-Z]+ -"'
       stages:
       - regex:
           expression: '^(?s)[^0-9]+(?P<time>[^ ]+ [^ ]+)[^a-z]+(?P<service>\S+)[ |-]+(?P<level>\S+)[ |-]+(?P<payload>.*)$'
@@ -58,7 +49,15 @@ scrape_configs:
           level:
       - output:
           source: payload
-
+      - metrics:
+          service_INFO_messages_total:
+              type: Counter
+              description: "INFO messages from pennsignalls services containing payload"
+              source: service
+              config: 
+                  match_all: true
+                  action: inc
+                  
 - job_name: syslog
   syslog:
     listen_address: 0.0.0.0:1514
@@ -73,7 +72,7 @@ scrape_configs:
 - job_name: 'nomad_metrics'
 
   consul_sd_configs:
-  - server: '{{ env "CONSUL_ADDR" }}'
+  - server: 'https://uphsvlndc155.uphs.upenn.edu:8500'
     services: ['nomad-client', 'nomad']
 
   relabel_configs:
