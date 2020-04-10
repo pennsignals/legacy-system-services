@@ -37,6 +37,10 @@ job "prometheus" {
     
     task "prometheus" {
 
+      env {
+        CONSUL_ADDR = "https://uphsvlndc155.uphs.upenn.edu:8500"
+      }
+
       template {
         change_mode = "noop"
         destination = "local/docker_alert.yml"
@@ -93,6 +97,15 @@ global:
   external_labels:
     monitor: 'codelab-monitor'
 
+alerting:
+  alertmanagers:
+  - consul_sd_configs:
+    - server: {{ env "CONSUL_ADDR" }}
+      scheme: "https"
+      tls_config:
+        insecure_skip_verify: true
+      services: ['alertmanager']
+
 # Rules and alerts are read from the specified file(s)
 rule_files:
  - docker_alert.yml
@@ -102,6 +115,36 @@ rule_files:
  - service_alert.yml
 
 scrape_configs:
+
+  - job_name: 'alertmanager'
+
+    consul_sd_configs:
+    - server: {{ env "CONSUL_ADDR" }}
+      scheme: "https"
+      tls_config:
+        insecure_skip_verify: true
+      services: ['alertmanager']
+
+  - job_name: 'nomad_metrics'
+
+    consul_sd_configs:
+    - server: {{ env "CONSUL_ADDR" }}
+      scheme: "https"
+      tls_config:
+        insecure_skip_verify: true
+      services: ['nomad-client', 'nomad']
+
+    relabel_configs:
+    - source_labels: ['__meta_consul_tags']
+      regex: '(.*)http(.*)'
+      action: keep
+
+    scrape_interval: 5s
+    metrics_path: /v1/metrics
+    params:
+      format: ['prometheus']
+
+
   - job_name:       'prometheus'
     scrape_interval: 5s
     static_configs:

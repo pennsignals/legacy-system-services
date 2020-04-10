@@ -3,7 +3,7 @@ groups:
   rules:  
   
   - alert: PrometheusJobMissing
-    expr: absent(up{job="my-job"})
+    expr: absent(up{job="prometheus"})
     for: 5m
     labels:
       severity: warning

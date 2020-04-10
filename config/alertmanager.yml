@@ -7,7 +7,7 @@ route:
   repeat_interval: 3h
   routes:
   - match:
-      alertname: InstanceDown
+      severity: error
   receiver: 'alert-team'
 receivers:
 - name: 'alert-team'

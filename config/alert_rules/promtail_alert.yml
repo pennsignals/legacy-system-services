@@ -5,6 +5,6 @@ groups:
     expr: absent(up{job="promtail"})
     for: 10s
     labels:
-      severity: critical
+      severity: error
     annotations:
       description: "Promtail is down."

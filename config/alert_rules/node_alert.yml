@@ -140,15 +140,6 @@ groups:
       summary: "Host SystemD service crashed (instance {{ $labels.instance }})"
       description: "SystemD service crashed\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
 
-  - alert: HostPhysicalComponentTooHot
-    expr: node_hwmon_temp_celsius > 75
-    for: 5m
-    labels:
-      severity: warning
-    annotations:
-      summary: "Host physical component too hot (instance {{ $labels.instance }})"
-      description: "Physical hardware component too hot\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
-
   - alert: HostNodeOvertemperatureAlarm
     expr: node_hwmon_temp_alarm == 1
     for: 5m

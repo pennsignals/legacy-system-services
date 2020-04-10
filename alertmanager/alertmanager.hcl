@@ -45,13 +45,13 @@ EOH
       resources {
         network {
           mbits = 10
-          port "alertmanager_ui" {}
+            port "http" { static = "9093" }
         }
       }
       service {
         name = "alertmanager"
         tags = ["urlprefix-/alertmanager strip=/alertmanager"]
-        port = "alertmanager_ui"
+        port = "http"
         check {
           name     = "alertmanager_ui port alive"
           type     = "http"

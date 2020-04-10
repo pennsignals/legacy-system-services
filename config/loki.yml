@@ -30,15 +30,16 @@ schema_config:
 
 storage_config:
   cassandra:
+    SSL: false
     username: pennsignals-ds-logdb
     password: v91i3RcUfuzBYOMxjuNFOOubQCKVbK15KCUu8n1CFXZkEhPv5UIsssDMWp86OQkrLPtaLSkbufnNpHVyBCEs1g==
     addresses: pennsignals-ds-logdb.cassandra.cosmos.azure.com
     port: 10350
     auth: true
     keyspace: loki
+    connect_timeout: 5000ms
   filesystem:
     directory: /data/loki/chunks
-
 
 # table_manager:
 #   retention_deletes_enabled: true
