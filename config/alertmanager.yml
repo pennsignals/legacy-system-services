@@ -13,3 +13,4 @@ receivers:
 - name: 'alert-team'
   slack_configs:
   - channel: "#grafana"
+    text: "<!channel> \nsummary: {{ .CommonAnnotations.summary }}\ndescription: {{ .CommonAnnotations.description }}"

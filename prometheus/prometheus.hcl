@@ -89,8 +89,7 @@ EOH
 
       template {
         destination   = "local/prometheus.yml"
-        change_mode   = "signal"
-        change_signal = "SIGHUP"
+        change_mode   = "noop"
         data = <<EOH
 global:
   scrape_interval:     15s 
