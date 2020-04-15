@@ -69,7 +69,8 @@ EOH
             "/var/run:/var/run:ro",
             "/sys:/sys:ro", 
             "/var/lib/docker/:/var/lib/docker:ro",
-            "/dev/disk/:/dev/disk:ro"
+            "/dev/disk/:/dev/disk:ro",
+            "/alloc/logs/:/alloc/logs:ro"
         ]
       }
 

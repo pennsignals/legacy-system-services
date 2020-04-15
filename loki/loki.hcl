@@ -35,11 +35,11 @@ EOH
 
         args = [
           "-config.file",
-          "/etc/loki/loki.yml",
+          "/etc/loki/local-config.yaml",
         ]
 
         volumes = [
-          "etc/loki/loki.yml:/etc/loki/loki.yml",
+          "/deploy/loki-data:/loki"
         ]
 
         port_map {

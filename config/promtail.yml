@@ -15,19 +15,7 @@ scrape_configs:
       - "localhost"
     labels:
       job: varlogs
-      app: testapp
-      __path__: /alloc/logs/*
- 
-- job_name: journal
-  journal:
-    json: false
-    max_age: 12h
-    path: /var/log/journal
-    labels:
-      job: systemd-journal
-  relabel_configs:
-    - source_labels: ['__journal__systemd_unit']
-      target_label: 'unit'
+      __path__: /alloc/logs/* 
 
 - job_name:  docker
   static_configs:
@@ -40,19 +28,10 @@ scrape_configs:
 
   pipeline_stages:
   - match:
-      selector: '{app="web_app"} |~ "- [A-Z]+ -"'
+      selector: '{job="dockerlogs"} |~ "- (INFO|WARNING|ERROR) -"'
       stages:
       - regex:
-          expression: '\D+(?P<app_time>[^ ]+ [^ ]+)[^a-z]+(?P<service>\S+)[^a-z]+(?P<level>(INFO|WARNING|ERROR))[ |-]+(?P<data>.*)\\n'
-      - template:
-          source: app_time
-          template: '{{ Replace .Value " " "T" 1 }}'
-      - template:
-          source: app_time
-          template: '{{ Replace .Value "," "." 1 }}'
-      - template:
-          source: app_time
-          template: '{{ .Value }}-0500'
+          expression: '\D+(?P<app_time>[^ ]+ [^ ]+)[^a-z]+(?P<service>\S+)\W+(?P<level>\w+)[^{]+(?P<data>.*)\\n'
       - template:
           source: data
           template: '{{ Replace .Value "\\" "" -1 }}'
@@ -85,6 +64,9 @@ scrape_configs:
 
   consul_sd_configs:
   - server: 'https://uphsvlndc155.uphs.upenn.edu:8500'
+    scheme: "https"
+    tls_config:
+      insecure_skip_verify: true
     services: ['nomad-client', 'nomad']
 
   relabel_configs:

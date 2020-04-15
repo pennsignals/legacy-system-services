@@ -38,7 +38,8 @@ job "prometheus" {
     task "prometheus" {
 
       env {
-        CONSUL_ADDR = "https://uphsvlndc155.uphs.upenn.edu:8500"
+        CONSUL_ADDR = "https://uphsvlndc155.uphs.upenn.edu:8500",
+        PROMETHEUS_ADDR = "http://prometheus.pennsignals.uphs.upenn.edu"
       }
 
       template {
@@ -126,6 +127,10 @@ scrape_configs:
 
   - job_name: 'nomad_metrics'
 
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true
+
     consul_sd_configs:
     - server: {{ env "CONSUL_ADDR" }}
       scheme: "https"
@@ -138,13 +143,13 @@ scrape_configs:
       regex: '(.*)http(.*)'
       action: keep
 
-    scrape_interval: 5s
+    scrape_interval: 5s      
     metrics_path: /v1/metrics
     params:
       format: ['prometheus']
 
 
-  - job_name:       'prometheus'
+  - job_name: 'prometheus'
     scrape_interval: 5s
     static_configs:
       - targets: ['localhost:9090']
@@ -174,7 +179,8 @@ EOH
       config {
         image = "prom/prometheus"
         volumes = [
-          "local/:/etc/prometheus/"
+          "local/:/etc/prometheus/",
+          "/deploy/prometheus-data:/prometheus"
         ]
         port_map {
           http = 9090
