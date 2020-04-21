@@ -139,9 +139,18 @@ scrape_configs:
       services: ['nomad-client', 'nomad']
 
     relabel_configs:
-    - source_labels: ['__meta_consul_tags']
-      regex: '(.*)http(.*)'
+    - source_labels: [__meta_consul_tags]
+      separator: ;
+      regex: (.*)http(.*)
+      replacement: $1
       action: keep
+        
+    - source_labels: [__meta_consul_address]
+      separator: ;
+      regex: (.*)
+      target_label: __meta_consul_service_address
+      replacement: $1
+      action: replace
 
     scrape_interval: 5s      
     metrics_path: /v1/metrics

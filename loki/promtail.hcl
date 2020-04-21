@@ -70,7 +70,8 @@ EOH
             "/sys:/sys:ro", 
             "/var/lib/docker/:/var/lib/docker:ro",
             "/dev/disk/:/dev/disk:ro",
-            "/alloc/logs/:/alloc/logs:ro"
+            "/alloc/logs/:/alloc/logs:ro",
+            "/var/nomad/alloc/:/var/nomad/alloc:ro"
         ]
       }
 

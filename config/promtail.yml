@@ -9,13 +9,32 @@ client:
   url: 'http://170.166.23.4:3100/loki/api/v1/push'
 
 scrape_configs:
-- job_name: system
+- job_name: nomadlogs
   static_configs:
   - targets:
-      - "localhost"
+      - localhost
     labels:
-      job: varlogs
-      __path__: /alloc/logs/* 
+      job: nomadlogs
+      __path__: /var/nomad/alloc/*/alloc/logs/*
+  pipeline_stages:
+  - match:
+      selector: '{job="nomadlogs"} |~ "- (INFO|WARNING|ERROR) -"'
+      stages:
+      - regex:
+          expression: '(?P<app_time>[^ ]+ [^ ]+)[^a-z]+(?P<service>\S+)\W+(?P<level>\w+)[^{]+(?P<data>.*)'
+      - labels:
+          service: 
+          level: 
+      - output:
+          source: data
+      - metrics:
+          service_INFO_messages_total:
+              type: Counter
+              description: "INFO messages from pennsignalls services containing payload"
+              source: service
+              config: 
+                  match_all: true
+                  action: inc   
 
 - job_name:  docker
   static_configs:
