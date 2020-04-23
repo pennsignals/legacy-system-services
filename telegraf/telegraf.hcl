@@ -3,6 +3,10 @@ job "telegraf" {
 
   group "telegraf" {
 
+    vault {
+      policies = ["system_services"]
+    }
+
     restart {
       mode = "delay"
     }
@@ -12,21 +16,41 @@ job "telegraf" {
       driver = "docker"
 
       template {
-        change_mode = "noop"
-        destination = "local/telegraf.conf"
+        change_mode   = "signal"
+        change_signal = "SIGHUP"
+        destination   = "local/telegraf.conf"
         data = <<EOH
 
-{{key "monitoring/telegraf.conf"}}
+[global_tags]
+
+[agent]
+  interval = "10s"
+  round_interval = true
+  metric_batch_size = 1000
+  metric_buffer_limit = 10000
+  collection_jitter = "0s"
+  flush_interval = "10s"
+  flush_jitter = "0s"
+  precision = ""
+  hostname = ""
+  omit_hostname = false
+
+[[outputs.prometheus_client]]
+listen = ":9273"
+metric_version = 2
+path = "/metrics"
+
+
+[[inputs.mongodb]]
+
+servers = [ "{{with secret "secret/mongo/system_services/servers"}}{{.Data.primary}}{{end}}", 
+            "{{with secret "secret/mongo/system_services/servers"}}{{.Data.backup_1}}{{end}}", 
+            "{{with secret "secret/mongo/system_services/servers"}}{{.Data.backup_2}}{{end}}" ]
+
+gather_perdb_stats = true
+gather_col_stats = true
 
 EOH
-      }
-
-      template {
-        data = <<EOH
-MONGO_URI="{{with secret "secret/mongo/vent_integration/uri"}}{{.Data.value}}{{end}}"
-EOH
-        destination = "/secrets/.env"
-        env         = true
       }
       
       config {
