@@ -139,48 +139,32 @@ scrape_configs:
       services: ['nomad-client', 'nomad']
 
     relabel_configs:
-    - source_labels: [__meta_consul_tags]
-      separator: ;
-      regex: (.*)http(.*)
-      replacement: $1
+    - source_labels: ['__meta_consul_tags']
+      regex: '(.*)http(.*)'
       action: keep
-        
-    - source_labels: [__meta_consul_address]
-      separator: ;
-      regex: (.*)
-      target_label: __meta_consul_service_address
-      replacement: $1
-      action: replace
 
     scrape_interval: 5s      
     metrics_path: /v1/metrics
     params:
       format: ['prometheus']
 
-
   - job_name: 'prometheus'
     scrape_interval: 5s
     static_configs:
       - targets: ['localhost:9090']
 
-{{ range services }}{{if in .Tags "monitoring"}}
-  - job_name: {{ .Name }}
-    scrape_interval: 5s
-    static_configs:
-      - targets: [{{range $index, $service := service .Name }}{{if ne $index 0}},{{end}}'{{$service.Address}}:{{$service.Port}}'{{end}}]
-        labels:
-          group: 'monitoring'
-{{end}}{{ end }}
+  - job_name: monitoring_jobs
+    consul_sd_configs:
+      - server: {{ env "CONSUL_ADDR" }}
+        scheme: "https"
+        tls_config:
+          insecure_skip_verify: true
+        tags: ['monitoring']
 
-{{ range services }}{{if in .Tags "metrics"}}
-  - job_name: {{ .Name }}
-    scrape_interval: 5s
-    {{ range service .Name }}static_configs:
-    - targets: ['{{.Address }}:{{.Port}}']
-      labels:
-        group: 'application'
-        app: '{{ .Name}}'{{end}}
-{{end}}{{ end }}
+    relabel_configs:
+      - source_labels: [__meta_consul_service]
+        target_label: job
+
 EOH
 
       }
