@@ -70,3 +70,34 @@ scrape_configs:
     relabel_configs:
       - source_labels: [__meta_consul_service]
         target_label: job
+
+  - job_name: consul_monitoring  
+
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true
+
+    consul_sd_configs:
+      - server: {{ env "CONSUL_ADDR" }}
+        scheme: "https"
+        tls_config:
+          insecure_skip_verify: true
+        services: ['consul']
+
+    relabel_configs:
+      - source_labels: [__meta_consul_service]
+        target_label: job
+
+      - source_labels: ['__address__']
+        separator:     ':'
+        regex:         '(.*):(8300)'
+        target_label:  '__address__'
+        replacement:   '${1}:8500'
+        action: replace
+
+
+    metrics_path: /v1/agent/metrics
+    params:
+      format: ['prometheus']
+
+        
