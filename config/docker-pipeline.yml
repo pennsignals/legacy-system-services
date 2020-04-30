@@ -1,0 +1,22 @@
+pipeline_stages:
+- match:
+    selector: '{job="dockerlogs_app"} |~ "- (NOTSET|DEBUG|INFO|WARNING|ERROR|CRITICAL) -"'
+    stages:
+    - regex:
+        expression: '\D+(?P<app_time>[^ ]+ [^ ]+)[^a-z]+(?P<service>\S+)\W+(?P<level>\w+)[^{]+(?P<data>.*)\\n'
+    - template:
+        source: data
+        template: '{{ Replace .Value "\\" "" -1 }}'
+    - labels:
+        service: 
+        level: 
+    - output:
+        source: data
+    - metrics:
+        service_INFO_messages_total:
+            type: Counter
+            description: "INFO messages from pennsignalls services containing payload"
+            source: service
+            config: 
+                match_all: true
+                action: inc    
