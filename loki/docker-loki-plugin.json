@@ -1,0 +1,38 @@
+{
+
+    "Description": "Loki Logging Driver",
+    "DockerVersion": "17.09.0-ce",
+    "Documentation": "https://github.com/grafana/loki",
+    "Entrypoint": [
+        "/bin/docker-driver"
+    ],
+    "Interface": {
+        "Socket": "loki.sock",
+        "Types": [
+            "docker.logdriver/1.0"
+        ]
+    },
+    "IpcHost": false,
+    "Linux": {
+        "AllowAllDevices": false,
+        "Capabilities": null,
+        "Devices": null
+    },
+    "Mounts": null,
+    "Network": {
+        "Type": "host"
+    },
+    "PidHost": false,
+    "PropagatedMount": "",
+    "User": {},
+    "WorkDir": "",
+    "rootfs": {
+        "diff_ids": [
+            "sha256:2b881939604340f6ef171ccdd204197895c491b0a634d02dbbe39e28cc5534cd"
+        ],
+        "type": "layers"
+    }
+    
+}
+
+

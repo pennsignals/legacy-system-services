@@ -15,6 +15,10 @@ job "promtail" {
     task "promtail" {
       driver = "docker"
 
+      env {
+        HOSTNAME = "${attr.unique.hostname}"
+      }
+
         template {
           destination = "etc/promtail/promtail.yml"
           change_mode = "signal"
@@ -38,14 +42,14 @@ EOH
       config {
         image = "grafana/promtail:master"
 
-        logging {
-          type = "loki"
-          config {
-            loki-url="${LOKI_ADDR}/loki/api/v1/push",
-            loki-retries=5,
-            loki-batch-size=400
-          }
-        }
+        // logging {
+        //   type = "loki"
+        //   config {
+        //     loki-url="${LOKI_ADDR}/loki/api/v1/push",
+        //     loki-retries=5,
+        //     loki-batch-size=400
+        //   }
+        // }
 
         args = [
           "-config.file",
@@ -54,25 +58,23 @@ EOH
 
         volumes = [
           "etc/promtail/promtail.yml:/etc/promtail/promtail.yml",
+          "/deploy/promtail-data:/tmp/promtail",
+          "/var/run/docker.sock:/var/run/docker.sock",
+          "/run/log/journal/:/run/log/journal",
+          "/var/log/journal:/var/log/journal",
+          "/etc/machine-id:/etc/machine-id",
+          "/:/rootfs:ro",
+          "/var/run:/var/run:ro",
+          "/sys:/sys:ro", 
+          "/var/lib/docker/:/var/lib/docker:ro",
+          "/dev/disk/:/dev/disk:ro",
+          "/alloc/logs/:/alloc/logs:ro",
+          "/var/nomad/alloc/:/var/nomad/alloc:ro"         
         ]
 
         port_map {
           promtail_port = 9080
         }
-
-        volumes = [
-            "/var/run/docker.sock:/var/run/docker.sock",
-            "/run/log/journal/:/run/log/journal",
-            "/var/log/journal:/var/log/journal",
-            "/etc/machine-id:/etc/machine-id",
-            "/:/rootfs:ro",
-            "/var/run:/var/run:ro",
-            "/sys:/sys:ro", 
-            "/var/lib/docker/:/var/lib/docker:ro",
-            "/dev/disk/:/dev/disk:ro",
-            "/alloc/logs/:/alloc/logs:ro",
-            "/var/nomad/alloc/:/var/nomad/alloc:ro"
-        ]
       }
 
       resources {

@@ -1,12 +1,9 @@
 pipeline_stages:
 - match:
-    selector: '{job="dockerlogs_app"} |~ "- (NOTSET|DEBUG|INFO|WARNING|ERROR|CRITICAL) -"'
+    selector: '{job="docker-loki"} |~ "- (NOTSET|DEBUG|INFO|WARNING|ERROR|CRITICAL) -"'
     stages:
     - regex:
-        expression: '\D+(?P<app_time>[^ ]+ [^ ]+)[^a-z]+(?P<service>\S+)\W+(?P<level>\w+)[^{]+(?P<data>.*)\\n'
-    - template:
-        source: data
-        template: '{{ Replace .Value "\\" "" -1 }}'
+          expression: '(?P<app_time>[^ ]+ [^ ]+)[^a-z]+(?P<service>\S+)\W+(?P<level>\w+)[^{]+(?P<data>.*)'
     - labels:
         service: 
         level: 
@@ -19,4 +16,4 @@ pipeline_stages:
             source: service
             config: 
                 match_all: true
-                action: inc    
+                action: inc  
