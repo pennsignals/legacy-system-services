@@ -43,9 +43,13 @@ scrape_configs:
     scheme: "https"
     tls_config:
       insecure_skip_verify: true
-    tags: ['production']
+    tags: ['staging']
 
   relabel_configs:
+
+    - source_labels: [nomad_namespace]
+      target_label: nomad_namespace
+      replacement: 'staging'
 
     - source_labels: [__meta_consul_tags]
       target_label: tags
@@ -121,7 +125,7 @@ EOH
 
         volumes = [
           "./config:/etc/promtail",
-          "/deploy/promtail-data:/tmp/promtail",
+          "/deploy/promtail-data_staging:/tmp/promtail",
           "/var/run:/var/run:ro",
           "/sys:/sys:ro", 
           "/var/lib/docker/:/var/lib/docker:ro",
