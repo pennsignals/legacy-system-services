@@ -60,7 +60,7 @@ EOH
       service {
         name = "loki-staging"
         port = "http"
-        tags = ["monitoring", "staging"]
+        tags = ["monitoring", "staging", "ui"]
         check {
           name = "Loki TCP Check"
           type = "tcp"
