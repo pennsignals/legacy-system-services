@@ -1,0 +1,103 @@
+global:
+  scrape_interval:     15s 
+  external_labels:
+    monitor: 'codelab-monitor'
+
+alerting:
+  alertmanagers:
+  - consul_sd_configs:
+    - server: {{ env "CONSUL_ADDR" }}
+      scheme: "https"
+      tls_config:
+        insecure_skip_verify: true
+      services: ['alertmanager']
+
+# Rules and alerts are read from the specified file(s)
+rule_files:
+ - docker_alert.yml
+ - node_alert.yml
+ - prometheus_alert.yml
+ - promtail_alert.yml
+ - service_alert.yml
+
+scrape_configs:
+
+  - job_name: 'alertmanager'
+
+    consul_sd_configs:
+    - server: {{ env "CONSUL_ADDR" }}
+      scheme: "https"
+      tls_config:
+        insecure_skip_verify: true
+      services: ['alertmanager']
+
+  - job_name: 'nomad_metrics'
+
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true
+
+    consul_sd_configs:
+    - server: {{ env "CONSUL_ADDR" }}
+      scheme: "https"
+      tls_config:
+        insecure_skip_verify: true
+      services: ['nomad-client', 'nomad']
+
+    relabel_configs:
+    - source_labels: ['__meta_consul_tags']
+      regex: '(.*)http(.*)'
+      action: keep
+
+    scrape_interval: 5s      
+    metrics_path: /v1/metrics
+    params:
+      format: ['prometheus']
+
+  - job_name: 'prometheus'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: monitoring_jobs
+    consul_sd_configs:
+      - server: {{ env "CONSUL_ADDR" }}
+        scheme: "https"
+        tls_config:
+          insecure_skip_verify: true
+        tags: ['monitoring']
+
+    relabel_configs:
+      - source_labels: [__meta_consul_service]
+        target_label: job
+
+  - job_name: consul_monitoring  
+
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true
+
+    consul_sd_configs:
+      - server: {{ env "CONSUL_ADDR" }}
+        scheme: "https"
+        tls_config:
+          insecure_skip_verify: true
+        services: ['consul']
+
+    relabel_configs:
+      - source_labels: [__meta_consul_service]
+        target_label: job
+
+      - source_labels: ['__address__']
+        separator:     ':'
+        regex:         '(.*):(8300)'
+        target_label:  '__address__'
+        replacement:   '${1}:8500'
+        action: replace
+
+
+    metrics_path: /v1/agent/metrics
+    params:
+      format: ['prometheus']
+
+        

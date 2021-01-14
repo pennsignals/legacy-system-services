@@ -1,0 +1,34 @@
+groups:
+- name: service_alerts
+  rules:
+
+  # Check if Vent MSSQL has not sent a message in over 5 minutes
+  - alert: Vent MSSQL Down
+    expr: rate(promtail_custom_service_INFO_messages_total{service="ventnotifymssql.mssql"}[1m]) == 0
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      title: Vent MSSQL is Down
+      description: Vent MSSQL has not sent a message in 5 minutes
+
+  # Check if Vent Twilio has not sent a message in over 5 minutes
+  - alert: Vent Twilio Down
+    expr: rate(promtail_custom_service_INFO_messages_total{service="ventnotifytwilio.micro"}[1m]) == 0
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      title: Vent MSSQL is Down
+      description: Vent Twilio has not sent a message in 5 minutes
+
+  # Check if Vent Twilio has not sent a message in over 5 minutes
+  - alert: Vent Cue Down
+    expr: rate(promtail_custom_service_INFO_messages_total{service="ventcue.micro"}[1m]) == 0
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      title: Vent Cue is Down
+      description: Vent Cue has not sent a message in 5 minutes
+      

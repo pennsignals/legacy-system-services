@@ -10,8 +10,23 @@ job "grafana" {
 
     task "grafana" {
       driver = "docker"
+
+      template {
+        change_mode = "noop"
+        destination = "local/grafana.ini"
+        data = <<EOH
+
+{{key "monitoring/grafana.ini"}}
+
+EOH
+      }
       config {
         image = "grafana/grafana"
+
+        volumes = [
+          "/deploy/grafana-data:/var/lib/grafana",
+          "local/grafana.ini:/etc/grafana/grafana.ini"
+        ]
         port_map {
           http = 3000
         }
