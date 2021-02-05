@@ -2,7 +2,11 @@ job "promtail" {
   datacenters = ["dc1"]
   type        = "system"
 
-  group "promtail" {
+  meta {
+    NAMESPACE = "staging"
+  }
+  
+  group "default" {
     count = 1
 
    restart {
@@ -11,14 +15,18 @@ job "promtail" {
       delay    = "25s"
       mode     = "delay"
     }
-
+    network {
+      mode = "host"  
+      port "promtail_http" { static = 9080 }
+    }
     task "promtail" {
       driver = "docker"
 
       env {
         NOMAD_NODE = "${attr.unique.hostname}"
         HOST_ADDR = "${attr.unique.network.ip-address}"
-        CONSUL_ADDR = "https://uphsvlndc155.uphs.upenn.edu:8500",
+        CONSUL_ADDR = "consul.service.consul:8500"
+        ENVIRONMENT = "staging"
       }
         template {
           destination = "./config/promtail.yml"
@@ -30,19 +38,29 @@ server:
     grpc_listen_port: 0 
   
 positions:
-    filename: /tmp/promtail/{{ env "NOMAD_NODE" }}/positions.yaml
+    filename: /tmp/promtail/positions.yaml
+
 client:
-  url: 'http://170.166.23.4:3100/loki/api/v1/push'
+  url: 'http://loki.service.consul:3100/loki/api/v1/push'
 
 scrape_configs:
 
-- job_name:  docker
+- job_name:  docker_all
   static_configs:
   - targets:
       - localhost
     labels:
-      job: dockerlogs
-      app: web_app
+      job: docker_all
+      app: docker_all
+      __path__: /var/lib/docker/containers/*/*log
+
+- job_name:  pennsignals_docker
+  static_configs:
+  - targets:
+      - localhost
+    labels:
+      job: pennsignals_docker
+      app: pennsignals_docker
       __path__: /var/lib/docker/containers/*/*log
 
   pipeline_stages:
@@ -69,16 +87,16 @@ scrape_configs:
 
   consul_sd_configs:
   - server: '{{env "HOST_ADDR"}}:8500'
-    scheme: "https"
+    scheme: "http"
     tls_config:
       insecure_skip_verify: true
-    tags: ['production']
+    tags: ['{{env "ENVIRONMENT"}}']
 
   relabel_configs:
 
     - source_labels: [nomad_namespace]
       target_label: nomad_namespace
-      replacement: 'production'
+      replacement: '{{env "ENVIRONMENT"}}'
 
     - source_labels: [__meta_consul_tags]
       target_label: tags
@@ -111,17 +129,21 @@ scrape_configs:
 
     - source_labels: [alloc_id]
       target_label: __tmp_file_dir
-      replacement: '/var/nomad/alloc/${1}/alloc/logs/'    
+      replacement: "/var/lib/nomad/alloc/$1/alloc/logs"
 
     - source_labels: [__tmp_file_dir, __tmp_filename]
-      separator: ''
+      separator: '/'
       target_label: __path__
-      replacement: '${1}${2}*'         
-     
+      replacement: "$1$2*"        
+
+    - source_labels: [__tmp_file_dir, __tmp_filename]
+      separator: '/'
+      target_label: path
+      replacement: "$1$2*"  
 
   pipeline_stages:
   - match:
-      selector: '{job="nomad_sd_logs"} |~ "- (NOTSET|DEBUG|INFO|WARNING|ERROR|CRITICAL) -"'
+      selector: '{job="nomad_sd_logs"} |~ "- [a-zA-Z]+ -"'
       stages:
       - regex:
             expression: '(?P<app_time>[^ ]+ [^ ]+)[^a-z]+(?P<service>\S+)\W+(?P<level>\w+)[^{]+(?P<data>.*)'
@@ -139,6 +161,13 @@ scrape_configs:
               config: 
                   match_all: true
                   action: inc  
+
+  - match:
+      selector: '{job="nomad_sd_logs"}'
+      stages:
+      - labels:
+          job: all_logs
+
 EOH
 
         }
@@ -154,17 +183,17 @@ EOH
 
         volumes = [
           "./config:/etc/promtail",
-          "/deploy/promtail-data:/tmp/promtail",
+          "/deploy/promtail-data/${NOMAD_NODE}:/tmp/promtail",
           "/var/run:/var/run:ro",
           "/sys:/sys:ro", 
           "/var/lib/docker/:/var/lib/docker:ro",
-          "/var/nomad/alloc/:/var/nomad/alloc:ro"       
+          "/var/lib/nomad/alloc:/var/lib/nomad/alloc:ro"       
 
         ]
 
-        port_map {
-          promtail_port = 9080
-        }
+        dns_servers = ["127.0.0.1", "${HOST_ADDR}"]
+        ports = [ "promtail_http" ]
+
 
       }
 
@@ -172,16 +201,12 @@ EOH
         cpu    = 100
         memory = 256
 
-        network {
-          mbits = 1
-          port  "http" { static = "9080" }
-        }
       }
 
       service {
         name = "promtail"
-        port = "http"
-        tags = ["monitoring", "production"]
+        port = "promtail_http"
+        tags = ["monitoring", "${ENVIRONMENT}"]
         check {
 
           name = "Promtail TCP Check"
