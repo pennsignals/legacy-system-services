@@ -3,7 +3,7 @@ job "promtail" {
   type        = "system"
 
   meta {
-    NAMESPACE = "staging"
+    NAMESPACE = "production"
   }
   
   group "default" {
@@ -20,13 +20,14 @@ job "promtail" {
       port "promtail_http" { static = 9080 }
     }
     task "promtail" {
+      user = "root"
       driver = "docker"
 
       env {
         NOMAD_NODE = "${attr.unique.hostname}"
         HOST_ADDR = "${attr.unique.network.ip-address}"
         CONSUL_ADDR = "consul.service.consul:8500"
-        ENVIRONMENT = "staging"
+        ENVIRONMENT = "production"
       }
         template {
           destination = "./config/promtail.yml"
@@ -41,7 +42,7 @@ positions:
     filename: /tmp/promtail/positions.yaml
 
 client:
-  url: 'http://loki.service.consul:3100/loki/api/v1/push'
+  url: 'http://{{ with service "loki" }}{{ with index . 0 }}{{ .Address }}{{ end }}{{ end }}:3100/loki/api/v1/push'
 
 scrape_configs:
 
@@ -65,23 +66,16 @@ scrape_configs:
 
   pipeline_stages:
   - match:
-      selector: '{job="dockerlogs"} |~ "- (NOTSET|DEBUG|INFO|WARNING|ERROR|CRITICAL) -"'
+      selector: '{job="pennsignals_docker"} |~ "- \\w+ -"'
       stages:
       - regex:
-          expression: '\D+(?P<app_time>[^ ]+ [^ ]+)[^a-z]+(?P<service>\S+)\W+(?P<level>\w+)[^{]+(?P<data>.*)\\n'
+          expression: '(?P<app_time>[^ ]+ [^ ]+)[^a-z]+(?P<service>\S+)\W+(?P<level>\w+)\W+(?P<message>[^{]+)(?P<data>.*)'
       - labels:
           service: 
-          level: 
+          level:
+          message:
       - output:
           source: data
-      - metrics:
-          service_INFO_messages_total:
-              type: Counter
-              description: "INFO messages from pennsignalls services containing payload"
-              source: service
-              config: 
-                  match_all: true
-                  action: inc  
 
 - job_name: nomad_sd_logs
 
@@ -136,37 +130,13 @@ scrape_configs:
       target_label: __path__
       replacement: "$1$2*"        
 
-    - source_labels: [__tmp_file_dir, __tmp_filename]
-      separator: '/'
-      target_label: path
-      replacement: "$1$2*"  
-
   pipeline_stages:
-  - match:
-      selector: '{job="nomad_sd_logs"} |~ "- [a-zA-Z]+ -"'
-      stages:
-      - regex:
-            expression: '(?P<app_time>[^ ]+ [^ ]+)[^a-z]+(?P<service>\S+)\W+(?P<level>\w+)[^{]+(?P<data>.*)'
-      - labels:
-          service: 
-          level: 
-          job: pennsignals_logs
-      - output:
-          source: data
-      - metrics:
-          service_INFO_messages_total:
-              type: Counter
-              description: "INFO messages from pennsignalls services containing payload"
-              source: service
-              config: 
-                  match_all: true
-                  action: inc  
 
   - match:
       selector: '{job="nomad_sd_logs"}'
       stages:
       - labels:
-          job: all_logs
+          job: all_sd_logs
 
 EOH
 
@@ -174,8 +144,7 @@ EOH
 
 
       config {
-        image = "grafana/promtail"
-
+        image = "grafana/promtail:2.1.0"
         args = [
           "-config.file",
           "/etc/promtail/promtail.yml"
