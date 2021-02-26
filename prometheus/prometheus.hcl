@@ -1,139 +1,49 @@
 job "prometheus" {
   datacenters = ["dc1"]
 
-  group "prometheus" {
+  meta {
+    NAMESPACE = "staging"
+  }
+
+  group "default" {
 
     restart {
       mode = "delay"
     }
 
-    task "pushgateway" {
-      driver = "docker"
-      config {
-        image = "prom/pushgateway"
-        port_map {
-          http = 9091
-        }
-      }
-
-      resources {
-        network {
-            port "http" { static = "9091" }
-          }
-      }
-
-      service {
-        name = "pushgateway"
-        port = "http"
-        tags = ["prometheus", "metrics", "ui"]
-        check {
-          type     = "tcp"
-          port     = "http"
-          interval = "10s"
-          timeout  = "2s"
-        }
-      }
+    network {
+      mode = "host"  
+      port "prometheus_http" { static = 9090 }
     }
-    
+
     task "prometheus" {
-
+      user = "root"
       env {
-        CONSUL_ADDR = "https://uphsvlndc155.uphs.upenn.edu:8500",
-        PROMETHEUS_ADDR = "http://prometheus.pennsignals.uphs.upenn.edu"
-      }
-
-      template {
-        change_mode = "noop"
-        destination = "local/docker_alert.yml"
-        data = <<EOH
-
-{{key "monitoring/alert_rules/docker_alert.yml"}}
-
-EOH
-      }
-      template {
-        change_mode = "noop"
-        destination = "local/node_alert.yml"
-        data = <<EOH
-
-{{key "monitoring/alert_rules/node_alert.yml"}}
-
-EOH
-      }
-      template {
-        change_mode = "noop"
-        destination = "local/prometheus_alert.yml"
-        data = <<EOH
-
-{{key "monitoring/alert_rules/prometheus_alert.yml"}}
-
-EOH
-      }
-      template {
-        change_mode = "noop"
-        destination = "local/promtail_alert.yml"
-        data = <<EOH
-
-{{key "monitoring/alert_rules/promtail_alert.yml"}}
-
-EOH
-      }
-      template {
-        change_mode = "noop"
-        destination = "local/service_alert.yml"
-        data = <<EOH
-
-{{key "monitoring/alert_rules/service_alert.yml"}}
-
-EOH
+        HOST_ADDR = "${attr.unique.network.ip-address}"
+        CONSUL_ADDR = "consul.service.consul:8500"
+        ENVIRONMENT = "staging"
       }
 
       template {
         destination   = "local/prometheus.yml"
         change_mode   = "noop"
+
         data = <<EOH
 global:
-  scrape_interval:     15s 
-  external_labels:
-    monitor: 'codelab-monitor'
-
-alerting:
-  alertmanagers:
-  - consul_sd_configs:
-    - server: {{ env "CONSUL_ADDR" }}
-      scheme: "https"
-      tls_config:
-        insecure_skip_verify: true
-      services: ['alertmanager']
-
-# Rules and alerts are read from the specified file(s)
-rule_files:
- - docker_alert.yml
- - node_alert.yml
- - prometheus_alert.yml
- - promtail_alert.yml
- - service_alert.yml
+  scrape_interval:     5s 
+  evaluation_interval: 5s
 
 scrape_configs:
 
-  - job_name: 'alertmanager'
-
-    consul_sd_configs:
-    - server: {{ env "CONSUL_ADDR" }}
-      scheme: "https"
-      tls_config:
-        insecure_skip_verify: true
-      services: ['alertmanager']
-
   - job_name: 'nomad_metrics'
 
-    scheme: https
+    scheme: http
     tls_config:
       insecure_skip_verify: true
 
     consul_sd_configs:
     - server: {{ env "CONSUL_ADDR" }}
-      scheme: "https"
+      scheme: "http"
       tls_config:
         insecure_skip_verify: true
       services: ['nomad-client', 'nomad']
@@ -156,7 +66,7 @@ scrape_configs:
   - job_name: monitoring_jobs
     consul_sd_configs:
       - server: {{ env "CONSUL_ADDR" }}
-        scheme: "https"
+        scheme: "http"
         tls_config:
           insecure_skip_verify: true
         tags: ['monitoring']
@@ -167,13 +77,13 @@ scrape_configs:
 
   - job_name: consul_monitoring  
 
-    scheme: https
+    scheme: http
     tls_config:
       insecure_skip_verify: true
 
     consul_sd_configs:
       - server: {{ env "CONSUL_ADDR" }}
-        scheme: "https"
+        scheme: "http"
         tls_config:
           insecure_skip_verify: true
         services: ['consul']
@@ -200,28 +110,25 @@ EOH
       }
       driver = "docker"
       config {
-        image = "prom/prometheus"
+        image = "prom/prometheus:v2.25.0"
         volumes = [
           "local/:/etc/prometheus/",
           "/deploy/prometheus-data:/prometheus"
         ]
-        port_map {
-          http = 9090
-        }
+        dns_servers = ["127.0.0.1", "${HOST_ADDR}"]
+        ports = [ "prometheus_http" ]
+
       }
 
       resources {
         cpu    = 200
         memory = 2048
-        network {
-            port "http" { static = "9090" }
-          }
       }
 
       service {
         name = "prometheus"
-        port = "http"
-        tags = ["prometheus","ui"]
+        port = "prometheus_http"
+        tags = ["prometheus","ui", "${ENVIRONMENT}"]
         check {
           name     = "prometheus_ui port alive"
           type     = "http"

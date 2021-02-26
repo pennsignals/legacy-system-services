@@ -2,7 +2,7 @@ job "grafana" {
   datacenters = ["dc1"]
 
   meta {
-    NAMESPACE = "staging"
+    NAMESPACE = "production"
   }
 
   group "default" {
@@ -22,10 +22,11 @@ job "grafana" {
 
       env {
         HOST_ADDR = "${attr.unique.network.ip-address}"
+        GF_PANELS_DISABLE_SANITIZE_HTML = "true"
       }
 
       config {
-        image = "grafana/grafana"
+        image = "grafana/grafana:7.4.2"
         dns_servers = ["127.0.0.1", "${HOST_ADDR}"]
         ports = [ "grafana_http" ]
         volumes = [
@@ -51,16 +52,16 @@ job "grafana" {
       driver = "docker"
 
       config {
-        image = "grafana/loki:master"
+        image = "grafana/loki:2.1.0"
         ports = [ "loki_http" ]
         // args = [
         //   "-config.file",
         //   "/etc/loki/local-config.yaml",
         // ]
 
-        // volumes = [
-        //   "/deploy/loki-data:/loki"
-        // ]
+        volumes = [
+          "/deploy/loki-data:/loki"
+        ]
 
       }
 
