@@ -1,0 +1,11 @@
+version: "3.8"
+
+services:
+
+  grafana:
+
+  loki:
+
+  promtail:
+
+  prometheus:

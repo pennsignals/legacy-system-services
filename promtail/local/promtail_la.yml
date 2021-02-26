@@ -51,17 +51,17 @@ scrape_configs:
 - job_name: nomad_sd_logs
 
   consul_sd_configs:
-  - server: '{{env "HOST_ADDR"}}:8500'
+  - server: '10.145.241.73:8500'
     scheme: "http"
     tls_config:
       insecure_skip_verify: true
-    tags: ['{{env "ENVIRONMENT"}}']
+    tags: ['staging']
 
   relabel_configs:
 
     - source_labels: [nomad_namespace]
       target_label: nomad_namespace
-      replacement: '{{env "ENVIRONMENT"}}'
+      replacement: 'staging'
 
     - source_labels: [__meta_consul_tags]
       target_label: tags
@@ -74,7 +74,7 @@ scrape_configs:
       replacement: nomad_sd_logs
 
     - source_labels: [__meta_consul_node]
-      regex: {{env "NOMAD_NODE"}}
+      regex: minion-lastage000001
       action: keep
 
     - source_labels: [__meta_consul_service]
