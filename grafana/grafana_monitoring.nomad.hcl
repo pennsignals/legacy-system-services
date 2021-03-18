@@ -18,6 +18,7 @@ job "grafana" {
     }
 
     task "grafana" {
+      user = "root"
       driver = "docker"
 
       env {
@@ -48,7 +49,7 @@ job "grafana" {
     }
 
     task "loki" {
-
+      user = "root"
       driver = "docker"
 
       config {

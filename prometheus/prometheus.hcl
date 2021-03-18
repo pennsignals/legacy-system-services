@@ -42,7 +42,7 @@ scrape_configs:
       insecure_skip_verify: true
 
     consul_sd_configs:
-    - server: {{ env "CONSUL_ADDR" }}
+    - server: {{ with service "consul" }}{{ with index . 0 }}{{ .Address }}{{ end }}{{ end }}:8500
       scheme: "http"
       tls_config:
         insecure_skip_verify: true
@@ -65,7 +65,7 @@ scrape_configs:
 
   - job_name: monitoring_jobs
     consul_sd_configs:
-      - server: {{ env "CONSUL_ADDR" }}
+      - server: {{ with service "consul" }}{{ with index . 0 }}{{ .Address }}{{ end }}{{ end }}:8500
         scheme: "http"
         tls_config:
           insecure_skip_verify: true
@@ -82,7 +82,7 @@ scrape_configs:
       insecure_skip_verify: true
 
     consul_sd_configs:
-      - server: {{ env "CONSUL_ADDR" }}
+      - server: {{ with service "consul" }}{{ with index . 0 }}{{ .Address }}{{ end }}{{ end }}:8500
         scheme: "http"
         tls_config:
           insecure_skip_verify: true
