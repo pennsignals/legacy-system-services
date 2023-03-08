@@ -7,25 +7,22 @@ job "grafana" {
       mode = "delay"
     }
 
-
     task "grafana" {
       driver = "docker"
 
       template {
         change_mode = "noop"
-        destination = "local/grafana.ini"
+        destination = "/local/grafana.ini"
         data = <<EOH
-
-{{key "monitoring/grafana.ini"}}
-
+{{key "pennsignals/grafana/grafana.ini"}}
 EOH
       }
       config {
-        image = "grafana/grafana"
+        image = "grafana/grafana-oss:8.2"
 
         volumes = [
           "/deploy/grafana-data:/var/lib/grafana",
-          "local/grafana.ini:/etc/grafana/grafana.ini"
+          "/local/grafana.ini:/etc/grafana/grafana.ini"
         ]
         port_map {
           http = 3000
