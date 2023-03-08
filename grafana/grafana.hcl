@@ -14,11 +14,11 @@ job "grafana" {
         change_mode = "noop"
         destination = "/local/grafana.ini"
         data = <<EOH
-{{key "pennsignals/grafana/grafana.ini"}}
+{{key "monitoring/grafana.ini"}}
 EOH
       }
       config {
-        image = "grafana/grafana-oss:8.2"
+        image = "grafana/grafana"
 
         volumes = [
           "/deploy/grafana-data:/var/lib/grafana",
